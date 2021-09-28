@@ -1,0 +1,214 @@
+---
+title: "Ciitizen Weight Data"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load libraries}
+library(tidyverse)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+
+```
+## R Markdown
+```{r read in your data}
+
+#setwd where your file is located
+
+setwd('/Users/tanyabrown/Documents/Ciitizen data')
+
+#read in your files
+growth_data <- read_excel('Ciitizen_SLC13A5_1.1_4_26_2021.xlsx',
+                          "growth_parameters",
+                           col_names = T)
+#read in your file
+wt_036 <- read_excel('wtageinf.xls',
+                          "wtageinf",
+                           col_names = T)
+
+wt20 <- read_excel('wtage.xls',
+                   'wtage',
+                   col_names = T)
+
+#View the data
+#View(growth_data)
+
+
+```
+
+
+```{r male weight 0-36mo with cdc data}
+ mwt_fxn <- function(weight) 
+   {mwt_36mo <- filter(wt_036, Sex == 1) #sorts the cdc data for sex 1 = male, 2 = female
+   body_wt <-filter(growth_data, grepl('body_weight', growth_parameter)) #sort for body weight
+   m_wt_data <- filter(body_wt, !grepl('female', sex)) #chooses sex  
+   m_wt_data <- arrange(m_wt_data, patient_uuid, growth_parameter_date) #arrange by patient
+  m_wt_kg <- m_wt_data %>% 
+        select(patient_uuid, growth_parameter, growth_parameter_value, growth_parameter_date, growth_parameter_unit, Agemos) %>%
+        mutate(kg_wt = ifelse(growth_parameter_unit == 'kg', growth_parameter_value, growth_parameter_value/1000))
+plot1 <-ggplot(mwt_36mo, aes(Agemos))+ #this takes the CDC data and plots the mean, 95th and 5th %ile
+  geom_smooth(aes(y=P50),
+              size = 0.5, 
+              se=F,
+              color = 'gray')+
+  geom_smooth(aes(y=P95),
+                size  = 0.5,
+                se=F,
+              color = 'gray')+
+  geom_smooth(aes(y=P5),
+                size = 0.5,
+              se=F,
+              color = 'gray')  + 
+ #geom_smooth(data = m_wt_kg, aes(Agemos, kg_wt),
+#             size = 2, 
+#             se = F, 
+#                 color = '#F8766D') + 
+geom_point(data = m_wt_kg, aes(Agemos, kg_wt, color = patient_uuid),
+                size = 2,
+                se=F) +
+  scale_colour_discrete(labels = c("Male 1", "Male 2", "Male 3", "Male 4", "Male 5", "Male 6", "Male 7"))+
+  labs(title = 'Weight',
+       subtitle = 'Male, 0-36 months',
+               x = "Age (months)", 
+               y = "Weight (kg)") +
+  theme_bw()+
+  theme(legend.title = element_blank())+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        text = element_text(size = 20))+
+  xlim(0,36)+
+  ylim(3,18)
+  #facet_wrap(~patient_uuid)
+return(plot1)}
+#ggsave("/Users/tanyabrown/Documents/Ciitizen data/name.png", width = 8, height = 6)
+```
+
+```{r male weight 2-20yrs with cdc data}
+ mwt_fxn <- function(weight) 
+   {mwt20 <- filter(wt20, Sex == 1) #sorts the cdc data for sex 1 = male, 2 = female
+   body_wt <-filter(growth_data, grepl('body_weight', growth_parameter)) #sort for body weight
+   m_wt_data <- filter(body_wt, !grepl('female', sex)) #chooses male  
+   m_wt_data <- arrange(m_wt_data, patient_uuid, growth_parameter_date) #arrange by patient
+  m_wt_kg <- m_wt_data %>% 
+        select(patient_uuid, growth_parameter, growth_parameter_value, growth_parameter_date, growth_parameter_unit, Ageyr) %>%
+        mutate(kg_wt = ifelse(growth_parameter_unit == 'kg', growth_parameter_value, growth_parameter_value/1000))
+plot1 <-ggplot(mwt20, aes(Ageyr))+ #this takes the CDC data and plots the mean, 95th and 5th %ile
+  geom_smooth(aes(y=P50),
+              size = 0.5, 
+              se=F,
+              color = 'gray')+
+  geom_smooth(aes(y=P95),
+                size  = 0.5,
+                se=F,
+              color = 'gray')+
+  geom_smooth(aes(y=P5),
+                size = 0.5,
+              se=F,
+              color = 'gray')  + 
+  geom_point(data = m_wt_kg, aes(Ageyr, kg_wt, color = patient_uuid),
+                size = 2,
+                se=F) +
+  scale_colour_discrete(labels = c("Male 1", "Male 2", "Male 3", "Male 4", "Male 5", "Male 6", "Male 7"))+
+  labs(title = 'Weight',
+       subtitle = 'Male, 2-20 years',
+               x = "Age (years)", 
+               y = "Weight (kg)") +
+  theme_bw()+
+  theme(legend.title = element_blank())+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        text = element_text(size = 20))+
+  xlim(2,20)
+  #facet_wrap(~patient_uuid)
+return(plot1)}
+#ggsave("/Users/tanyabrown/Documents/Ciitizen data/name.png", width = 8, height = 6)
+```
+
+
+
+```{r female weight 0-36mo with cdc data}
+ fwt_fxn <- function(weight) 
+   {fwt_36mo <- filter(wt_036, Sex == 2) #sorts the cdc data for sex 1 = male, 2 = female
+   body_wt <-filter(growth_data, grepl('body_weight', growth_parameter)) #sort for body weight
+   f_wt_data <- filter(body_wt, grepl('female', sex)) #chooses sex  
+   f_wt_data <- arrange(f_wt_data, patient_uuid, growth_parameter_date) #arrange by patient
+        f_wt_kg <- f_wt_data %>% 
+        select(patient_uuid, growth_parameter, growth_parameter_value, growth_parameter_date, growth_parameter_unit, Agemos) %>%
+        mutate(kg_wt = ifelse(growth_parameter_unit == 'kg', growth_parameter_value, growth_parameter_value/1000))
+#plot1 <- 
+  plot1 <-ggplot(fwt_36mo, aes(Agemos))+ #this takes the CDC data and plots the mean, 95th and 5th %ile
+  geom_smooth(aes(y=P50),
+              size = 0.5, 
+              se=F, 
+              color = 'gray')+
+  geom_smooth(aes(y=P95),
+                size  = 0.5,
+                se=F,
+              color = 'gray')+
+  geom_smooth(aes(y=P5),
+                size = 0.5,
+              se=F,
+              color = 'gray')  + 
+geom_point(data = f_wt_kg, aes(Agemos, kg_wt, color = patient_uuid),
+                size = 2,
+                se=F) +
+    scale_colour_discrete(labels = c("Female 1", "Female 2", "Female 3", "Female 4", "Female 5", "Female 6", "Female 7", "Female 8"))+
+  labs(title = 'Weight', 
+       subtitle = 'Female, 0-36 months',
+               x = "Age (months)", 
+               y = "Weight (kg)") +
+    theme_bw()+
+    theme(legend.title = element_blank())+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        text = element_text(size = 20))+
+  xlim(0,36)+
+    ylim(3,18)
+return(plot1)}
+```
+
+```{r female weight 2-20yr with cdc data}
+ fwtyr_fxn <- function(weight) 
+   {fwt20 <- filter(wt20, Sex == 2) #sorts the cdc data for sex 1 = male, 2 = female
+   body_wt <-filter(growth_data, grepl('body_weight', growth_parameter)) #sort for body weight
+   f_wt_data <- filter(body_wt, grepl('female', sex)) #chooses sex  
+   f_wt_data <- arrange(f_wt_data, patient_uuid, growth_parameter_date) #arrange by patient
+        f_wt_kg <- f_wt_data %>% 
+        select(patient_uuid, growth_parameter, growth_parameter_value, growth_parameter_date, growth_parameter_unit, Ageyr) %>%
+        mutate(kg_wt = ifelse(growth_parameter_unit == 'kg', growth_parameter_value, growth_parameter_value/1000))
+#plot1 <- 
+  plot1 <-ggplot(fwt20, aes(Ageyr))+ #this takes the CDC data and plots the mean, 95th and 5th %ile
+  geom_smooth(aes(y=P50),
+              size = 0.5, 
+              se=F, 
+              color = 'gray')+
+  geom_smooth(aes(y=P95),
+                size  = 0.5,
+                se=F,
+              color = 'gray')+
+  geom_smooth(aes(y=P5),
+                size = 0.5,
+              se=F,
+              color = 'gray')  + 
+  geom_point(data = f_wt_kg, aes(Ageyr, kg_wt, color = patient_uuid),
+                size = 2,
+                se=F) +
+  scale_colour_discrete(labels = c("Female 1", "Female 2", "Female 3", "Female 4", "Female 5", "Female 6", "Female 7", "Female 8"))+
+     labs(title = 'Weight',
+          subtitle = 'Female, 2-20 years',
+               x = "Age (years)", 
+               y = "Weight (kg)") +
+    theme_bw()+
+    theme(legend.title = element_blank())+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        text = element_text(size = 20))+
+  xlim(2,20)
+return(plot1)}
+#ggsave("/Users/tanyabrown/Documents/Ciitizen data/name.png", width = 8, height = 6)
+```
+

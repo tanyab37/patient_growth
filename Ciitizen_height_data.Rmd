@@ -1,0 +1,232 @@
+---
+title: "Ciitizen height parameters"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load libraries}
+library(tidyverse)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+
+```
+
+```{r load your data}
+#setwd where your file is located
+
+setwd('/Users/tanyabrown/Documents/Ciitizen data')
+
+#read in your files
+growth_data <- read_excel('Ciitizen_SLC13A5_1.1_4_26_2021.xlsx',
+                          "growth_parameters",
+                           col_names = T)
+#read in your file
+ht_036 <- read_excel('lenageinf.xlsx',
+                          "lenageinf",
+                           col_names = T)
+
+ht_20 <- read_excel('statage.xls',
+                    'statage',
+                    col_names = T)
+
+#View the data
+#View(growth_data)
+
+```
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+
+```{r female height with cdc}
+fheight_cdcfxn <- function(measurement)
+  {fht_36mo <- filter(ht_036, Sex == 2)
+    ht_data <- filter(growth_data, grepl('body_height', growth_parameter)) #sort for measurement
+    f_ht_data <- filter(ht_data, grepl('female', sex)) #chooses "female"
+    f_ht_data <- arrange(f_ht_data, patient_uuid, growth_parameter_date) #arrange by patient
+    f_ht_cm <- f_ht_data %>% 
+      select(patient_uuid, growth_parameter, growth_parameter_value, growth_parameter_date, growth_parameter_unit, Agemos) %>% 
+    mutate(cm_ht = ifelse(growth_parameter_unit =="m", growth_parameter_value*100,growth_parameter_value)) #convert m to cm
+plot1 <- ggplot(fht_36mo, aes(Agemos))+ #takes the CDC data
+  geom_smooth(aes(y=P50),
+              size = 0.5, 
+              se=F, 
+              color = 'gray')+
+ # geom_dl(aes(label = fht_36mo), method = list ("last.points"), position = identity)+
+  geom_smooth(aes(y=P95),
+                size  = 0.5,
+                se=F,
+              color = 'gray')+
+  geom_smooth(aes(y=P5),
+                size = 0.5,
+                se=F,
+              color = 'gray')  + 
+      geom_point(data = f_ht_cm, aes(Agemos, cm_ht, color = patient_uuid),
+                size = 2) +
+ scale_colour_discrete(labels = c("Female 1", "Female 2", "Female 3", "Female 4", "Female 5", "Female 6", "Female 7", "Female 8"))+
+   labs(title = 'Height', 
+        subtitle = 'Female, 0-36 months',
+               x = "Age (months)", 
+               y = "Height (cm)")+
+    theme_bw()+
+    theme(legend.title = element_blank())+
+      theme(plot.title = element_text(hjust = 0.5),
+            plot.subtitle = element_text(hjust = 0.5),
+            text = element_text(size = 20))+
+      xlim(0,36)+
+  ylim(50,100)
+ return(plot1)
+}
+
+#ggsave("/Users/tanyabrown/Documents/Ciitizen data/Dotplots/DATE.pdf", width = 8, height = 6)
+
+
+```
+
+```{r male height 0-36 with cdc}
+
+mheight_cdcfxn <- function(measurement)
+  {mht_36mo <- filter(ht_036, Sex == 1) #chooses sex in CDC data
+    ht_data <- filter(growth_data, grepl('body_height', growth_parameter)) #sort for measurement in Ciitizen data
+    m_ht_data <- filter(ht_data, !grepl('female', sex)) #chooses "male"
+    m_ht_data <- arrange(m_ht_data, patient_uuid, growth_parameter_date) #arrange by patient
+    m_ht_cm <- m_ht_data %>% 
+      select(patient_uuid, growth_parameter, growth_parameter_value, growth_parameter_date, growth_parameter_unit, Agemos) %>% 
+    mutate(cm_ht = ifelse(growth_parameter_unit =="m", growth_parameter_value*100,growth_parameter_value)) #convert m to cm
+plot1 <- ggplot(mht_36mo, aes(Agemos))+ #takes the CDC data
+  geom_smooth(aes(y=P50),
+              size = 0.5, 
+              se=F, 
+              color = 'gray')+
+  geom_smooth(aes(y=P95),
+                size  = 0.5,
+                se=F,
+              color = 'gray')+
+  geom_smooth(aes(y=P5),
+                size = 0.5,
+              se=F,
+              color = 'gray')  + 
+#    geom_smooth(data = m_ht_cm, aes(Agemos, cm_ht),
+#                size = 2,
+#                se=F,
+#                color = '#F8766D')+
+        geom_point(data = m_ht_cm, aes(Agemos, cm_ht, color = patient_uuid),
+                size = 2,
+                se=F) +
+  scale_colour_discrete(labels = c("Male 1", "Male 2", "Male 3", "Male 4", "Male 5", "Male 6", "Male 7"))+
+  theme_bw()+
+  theme(legend.title = element_blank())+
+  labs(title = 'Height',
+       subtitle = 'Male, 0-36 months',
+               x = "Age (months)", 
+               y = "Height (cm)")+
+      theme(plot.title = element_text(hjust = 0.5),
+            plot.subtitle = element_text(hjust = 0.5),
+            text = element_text(size = 20))+
+      xlim(0,36)+
+  scale_y_continuous(limits = c(45, 105), breaks = c(50, 60, 70, 80, 90, 100))
+#ylim(45, 105)
+ return(plot1)
+}
+
+#ggsave("/Users/tanyabrown/Documents/Ciitizen data/Dotplots/NAME.pdf", width = 8, height = 6)
+
+```
+
+```{r male height 2-20 with cdc}
+
+mht_yrfxn <- function(measurement)
+  {mht_20 <- filter(ht_20, Sex == 1) #chooses sex in CDC data
+    ht_data <- filter(growth_data, grepl('body_height', growth_parameter)) #sort for measurement in Ciitizen data
+    m_ht_data <- filter(ht_data, !grepl('female', sex)) #chooses "male"
+    m_ht_data <- arrange(m_ht_data, patient_uuid, growth_parameter_date) #arrange by patient
+    m_ht_cm <- m_ht_data %>% 
+      select(patient_uuid, growth_parameter, growth_parameter_value, growth_parameter_date, growth_parameter_unit, Ageyr) %>% 
+    mutate(cm_ht = ifelse(growth_parameter_unit =="m", growth_parameter_value*100,growth_parameter_value)) #convert m to cm
+plot1 <- ggplot(mht_20, aes(Ageyr))+ #takes the CDC data
+  geom_smooth(aes(y=P50),
+              size = 0.5, 
+              se=F, 
+              color = 'gray')+
+  geom_smooth(aes(y=P95),
+                size  = 0.5,
+                se=F,
+              color = 'gray')+
+  geom_smooth(aes(y=P5),
+                size =0.5,
+              se=F,
+              color = 'gray')  + 
+     geom_point(data = m_ht_cm, aes(Ageyr, cm_ht, color = patient_uuid),
+                size = 2)+
+ scale_colour_discrete(labels = c("Male 1", "Male 2", "Male 3", "Male 4", "Male 5", "Male 6", "Male 7"))+
+   labs(title = 'Height', 
+        subtitle = 'Male, 2-20 years',
+               x = "Age (years)", 
+               y = "Height (cm)")+
+  ylim(85, 190)+
+  theme_bw()+
+  theme(legend.title = element_blank())+
+      theme(plot.title = element_text(hjust = 0.5),
+            plot.subtitle = element_text(hjust = 0.5),
+            text = element_text(size = 20))+
+      xlim(2,20)
+ return(plot1)
+}
+
+#ggsave("/Users/tanyabrown/Documents/Ciitizen data/", width = 8, height = 6)
+```
+
+```{r female height 2-20 with cdc}
+
+fht_yrfxn <- function(measurement)
+  {fht_20 <- filter(ht_20, Sex == 2) #chooses sex in CDC data
+    ht_data <- filter(growth_data, grepl('body_height', growth_parameter)) #sort for measurement in Ciitizen data
+    f_ht_data <- filter(ht_data, grepl('female', sex)) #chooses "male"
+    f_ht_data <- arrange(f_ht_data, patient_uuid, growth_parameter_date) #arrange by patient
+    f_ht_cm <- f_ht_data %>% 
+      select(patient_uuid, growth_parameter, growth_parameter_value, growth_parameter_date, growth_parameter_unit, Ageyr) %>% 
+    mutate(cm_ht = ifelse(growth_parameter_unit =="m", growth_parameter_value*100,growth_parameter_value)) #convert m to cm
+plot1 <- ggplot(fht_20, aes(Ageyr))+ #takes the CDC data
+  geom_smooth(aes(y=P50),
+              size = 0.5, 
+              se=F, 
+              color = 'gray')+
+  geom_smooth(aes(y=P95),
+                size  = 0.5,
+                se=F,
+              color = 'gray')+
+  geom_smooth(aes(y=P5),
+                size = 0.5,
+              se=F,
+              color = 'gray')  + 
+    geom_point(data = f_ht_cm, aes(Ageyr, cm_ht, color = patient_uuid),
+                size = 2)+
+                #se=F,
+                #color = '#00BFC4')+
+   scale_colour_discrete(labels = c("Female 1", "Female 2", "Female 3", "Female 4", "Female 5", "Female 6", "Female 7", "Female 8"))+
+ #ylim(80,180)+ 
+  scale_y_continuous(limits = c(80,180, 10))+
+   xlim(2,20)+
+  ylim(80, 175)+
+   labs(title = 'Height', 
+        subtitle = 'Female, 2-20 years',
+               x = "Age (years)", 
+               y = "Height (cm)")+
+  theme_bw()+
+  theme(legend.title = element_blank())+
+      theme(plot.title = element_text(hjust = 0.5),
+            plot.subtitle = element_text(hjust = 0.5),
+            text = element_text(size = 20))
+ return(plot1)
+}
+
+#ggsave("/Users/tanyabrown/Documents/Ciitizen data/Dotplots/NAME.png", width = 8, height = 6)
+
+```
